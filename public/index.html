@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>YT MIX Downloader</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+<link href="https://fonts.bunny.net/css?family=poppins:400,500,700" rel="stylesheet"/>
+
+<style>
+body{
+  font-family:Poppins;
+  background:#111;
+  color:#fff;
+}
+.container{
+  max-width:900px;
+  margin:auto;
+  padding:20px;
+}
+input,select,button{
+  width:100%;
+  padding:12px;
+  margin:6px 0;
+  border-radius:6px;
+  border:none;
+}
+button{
+  background:#4d79ff;
+  color:#fff;
+}
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
+  gap:10px;
+}
+.card{
+  background:#222;
+  padding:10px;
+}
+.card img{
+  width:100%;
+}
+.small{font-size:12px;color:#aaa;}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+<h1>MIX Playlist Downloader</h1>
+
+<!-- 🔥 PLAYLIST PRESETS -->
+<select onchange="setPreset(this.value)">
+<option value="">-- Select Test Playlist --</option>
+<option value="https://youtube.com/playlist?list=PL4BE13E894E74A403">Classic Rock</option>
+<option value="https://youtube.com/playlist?list=PLMC9KNkIncKvYin_USF1qoJQnIyMAfRxl">Top Hits</option>
+<option value="https://youtube.com/playlist?list=PLFgquLnL59alCl_2TQvOiD5Vgm1hCaGSI">Pop Music</option>
+<option value="https://youtube.com/playlist?list=PL8F6B0753B2CCA128">Hip Hop</option>
+<option value="https://youtube.com/playlist?list=PLP4CSgl7K7or84AAhr7zlLNpghEnKWu2c">Chill</option>
+</select>
+
+<input id="playlistUrl" placeholder="Paste YouTube Playlist URL">
+
+<select id="limit">
+<option value="10">10</option>
+<option value="25">25</option>
+<option value="50">50</option>
+<option value="100">100</option>
+<option value="200">200</option>
+<option value="500">500</option>
+</select>
+
+<label><input type="checkbox" id="repeat"> Repeat Forever</label>
+
+<button onclick="loadPlaylist()">Load Playlist</button>
+<button onclick="startDownload()">Convert & Download</button>
+
+<div id="status"></div>
+<div class="grid" id="results"></div>
+
+</div>
+
+<script>
+
+let playlistData = [];
+
+function setPreset(val){
+  document.getElementById('playlistUrl').value = val;
+}
+
+async function loadPlaylist(){
+  const url = document.getElementById('playlistUrl').value;
+  const limit = document.getElementById('limit').value;
+
+  document.getElementById('status').innerText = "Loading...";
+
+  const res = await fetch('/playlist',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({url,limit})
+  });
+
+  const data = await res.json();
+
+  playlistData = data;
+
+  const container = document.getElementById('results');
+  container.innerHTML = "";
+
+  data.forEach(v=>{
+    container.innerHTML += `
+      <div class="card">
+        <img src="${v.thumbnail}">
+        <div>${v.title}</div>
+        <div class="small">${v.duration}</div>
+      </div>
+    `;
+  });
+
+  document.getElementById('status').innerText =
+    data.length ? `Loaded ${data.length} tracks` : "No results found";
+}
+
+async function startDownload(){
+  const repeat = document.getElementById('repeat').checked;
+
+  document.getElementById('status').innerText = "Downloading...";
+
+  await fetch('/download-playlist',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      list:playlistData,
+      repeat
+    })
+  });
+
+  document.getElementById('status').innerText = "Started (check terminal)";
+}
+
+</script>
+</body>
+</html>
